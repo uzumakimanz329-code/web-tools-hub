@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Tools Hub</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <h1>Web Tools Hub</h1>
+      <p>Akses alat pencarian dan pemutar audio latar belakang.</p>
+      <div class="creator-badge">Dibuat oleh Manz Ganteng</div>
+    </div>
+
+    <div class="search-panel">
+      <select id="platformSelect" class="input-box" onchange="toggleChips()">
+        <option value="youtube">YouTube Search</option>
+        <option value="tiktok">TikTok (Search / Link)</option>
+        <option value="web">Pencarian Web (Google Search)</option>
+      </select>
+      <input type="text" id="searchInput" class="input-box" placeholder="Masukkan kata kunci pencarian YouTube...">
+      <button class="btn-process" onclick="performSearch()">Proses</button>
+    </div>
+
+    <div id="ytChips" class="chips-container" style="display: flex;">
+      <button class="chip" onclick="setKeyword('DJ Remix Viral 2026', this)">DJ Remix</button>
+      <button class="chip" onclick="setKeyword('Pop Indo Terbaru', this)">Pop Indo</button>
+      <button class="chip" onclick="setKeyword('Speed Up', this)">Speed Up</button>
+      <button class="chip" onclick="setKeyword('Akustik Cover', this)">Akustik</button>
+    </div>
+
+    <div id="resultArea" class="results-area">
+      <div class="status-msg">Silakan lakukan pencarian untuk memulai.</div>
+    </div>
+  </div>
+
+  <button class="fab-agent" onclick="toggleAgentChat()" title="Tanya AI Agent Musik">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+  </button>
+
+  <div id="agentFloatingBox" class="agent-floating-box">
+    <div class="agent-header">
+      <div class="agent-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10H12V2z"></path><path d="M12 12L2.1 12a10 10 0 0 0 9.9 10V12z"></path></svg>
+        GPT-OSS AI Agent Music
+      </div>
+      <button class="btn-close-agent" onclick="toggleAgentChat()">&times;</button>
+    </div>
+    <div id="chatLogs" class="chat-logs">
+      <div class="chat-msg agent">Halo! Saya AI Agent GPT-OSS. Ketik potongan lirik atau judul lagu untuk saya analisis.</div>
+    </div>
+    <div class="agent-input-area">
+      <input type="text" id="agentInput" class="agent-input-box" placeholder="Ketik lirik / judul...">
+      <button class="btn-agent-send" onclick="sendAgentMessage()">Kirim</button>
+    </div>
+  </div>
+
+  <script>
+    /* @ts-nocheck */
+
+    var inputElem = document.getElementById('searchInput');
+    var agentInputElem = document.getElementById('agentInput');
+
+    if (inputElem) {
+      inputElem.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') performSearch();
+      });
+    }
+
+    if (agentInputElem) {
+      agentInputElem.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') sendAgentMessage();
+      });
+    }
+
+    function toggleChips() {
+      var platform = document.getElementById('platformSelect').value;
+      var ytChips = document.getElementById('ytChips');
+      ytChips.style.display = (platform === 'youtube') ? 'flex' : 'none';
+      
+      if (platform === 'tiktok') {
+        inputElem.placeholder = "Masukkan kata kunci atau paste Link TikTok...";
+      } else if (platform === 'web') {
+        inputElem.placeholder = "Masukkan kata kunci pencarian Web Google...";
+      } else {
+        inputElem.placeholder = "Masukkan kata kunci pencarian YouTube...";
+      }
+    }
+
+    /**
+     * @param {any} query
+     * @param {any} btn
+     */
+    function setKeyword(query, btn) {
+      document.querySelectorAll('.chip').forEach(function(c) { c.classList.remove('active'); });
+      btn.classList.add('active');
+      inputElem.value = query;
+      performSearch();
+    }
+
+    function toggleAgentChat() {
+      var box = document.getElementById('agentFloatingBox');
+      if (box.style.display === 'none' || !box.style.display) {
+        box.style.display = 'flex';
+      } else {
+        box.style.display = 'none';
+      }
+    }
+
+    /**
+     * Mengatur Kecepatan Pemutaran Audio Kustom (Slider)
+     * @param {HTMLInputElement} sliderElem
+     */
+    function changePlaybackSpeed(sliderElem) {
+      var card = sliderElem.closest('.card, .chat-msg');
+      if (card) {
+        var audio = card.querySelector('audio');
+        var valDisplay = card.querySelector('.speed-val');
+        if (audio) {
+          var speed = parseFloat(sliderElem.value);
+          audio.playbackRate = speed;
+
+          // Mematikan pertahanan nada agar karakter suara berubah (Slowed/Speed Up)
+          audio.preservesPitch = false;
+          audio.webkitPreservesPitch = false;
+          audio.mozPreservesPitch = false;
+
+          if (valDisplay) {
+            valDisplay.innerText = speed.toFixed(2) + 'x';
+          }
+        }
+      }
+    }
+
+    /**
+     * @param {any} audioElem
+     */
+    function setMediaSession(audioElem) {
+      document.querySelectorAll('audio').forEach(function(el) {
+        if (el !== audioElem) el.pause();
+      });
+
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: audioElem.getAttribute('data-title') || 'Tidak diketahui',
+          artist: audioElem.getAttribute('data-artist') || 'Tidak diketahui',
+          artwork: [
+            { src: audioElem.getAttribute('data-cover'), sizes: '512x512', type: 'image/jpeg' }
+          ]
+        });
+
+        try {
+          navigator.mediaSession.setActionHandler('play', function() { audioElem.play(); });
+          navigator.mediaSession.setActionHandler('pause', function() { audioElem.pause(); });
+        } catch (err) {}
+
+        navigator.mediaSession.playbackState = "playing";
+      }
+    }
+
+    /**
+     * @param {any} audioId
+     */
+    function allowAndPlay(audioId) {
+      var elem = document.getElementById(audioId);
+      if (elem) {
+        elem.style.display = "block";
+        elem.play();
+      }
+    }
+
+    async function sendAgentMessage() {
+      var agentInput = document.getElementById('agentInput');
+      var query = agentInput.value.trim();
+      if (!query) return;
+
+      var chatLogs = document.getElementById('chatLogs');
+      chatLogs.innerHTML += '<div class="chat-msg user">' + query + '</div>';
+      chatLogs.scrollTop = chatLogs.scrollHeight;
+      agentInput.value = '';
+
+      chatLogs.innerHTML += '<div class="chat-msg agent" id="tempLoading">Menganalisis via GPT-OSS AI...</div>';
+      chatLogs.scrollTop = chatLogs.scrollHeight;
+
+      try {
+        var res = await fetch('/api/agent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: query })
+        });
+        var data = await res.json();
+        var tempElem = document.getElementById('tempLoading');
+        if (tempElem) tempElem.remove();
+
+        if (data.error) {
+          chatLogs.innerHTML += '<div class="chat-msg agent error-text">' + data.error + '</div>';
+        } else {
+          var msgHtml = '<div class="chat-msg agent">' + data.reply;
+          if (data.song) {
+            var audioUniqueId = 'agent_audio_' + Date.now();
+            var safeSongTitle = String(data.song.title || 'Musik').replace(/"/g, '&quot;');
+            msgHtml += `
+              <div class="permission-box">
+                <div class="permission-text">Izinkan untuk memutar musik ini?</div>
+                <button class="btn-perm-accept" onclick="allowAndPlay('${audioUniqueId}')">Ya, Izinkan & Putar Musik</button>
+              </div>
+              <audio id="${audioUniqueId}" controls style="display:none; margin-top:8px;" 
+                     data-title="${safeSongTitle}" 
+                     data-artist="GPT-OSS Agent" 
+                     data-cover="${data.song.thumbnail || ''}" 
+                     onplay="setMediaSession(this)">
+                <source src="/api/stream?url=${encodeURIComponent(data.song.url)}" type="audio/mpeg">
+              </audio>
+            `;
+          }
+          msgHtml += '</div>';
+          chatLogs.innerHTML += msgHtml;
+        }
+        chatLogs.scrollTop = chatLogs.scrollHeight;
+      } catch(err) {
+        var tempElem = document.getElementById('tempLoading');
+        if (tempElem) tempElem.remove();
+        chatLogs.innerHTML += '<div class="chat-msg agent error-text">Gagal menghubungi Agent AI.</div>';
+      }
+    }
+
+    async function performSearch() {
+      var platform = document.getElementById('platformSelect').value;
+      var query = inputElem.value.trim();
+      var resultArea = document.getElementById('resultArea');
+      
+      if (!query) return;
+
+      if (platform === 'web') {
+        window.open('https://www.google.com/search?q=' + encodeURIComponent(query), '_blank');
+        resultArea.innerHTML = '<div class="status-msg">Membuka pencarian Google di tab baru...</div>';
+        return;
+      }
+
+      resultArea.innerHTML = '<div class="status-msg">Memproses pencarian...</div>';
+
+      try {
+        if (platform === 'youtube') {
+          var res = await fetch('/api/ytsearch?query=' + encodeURIComponent(query));
+          if (!res.ok) throw new Error("Gagal mengambil data dari server");
+          var data = await res.json();
+
+          if (!data || data.length === 0) {
+            resultArea.innerHTML = '<div class="status-msg">Tidak ada hasil YouTube ditemukan.</div>';
+            return;
+          }
+
+          resultArea.innerHTML = '';
+          for (var i = 0; i < data.length; i++) {
+            var item = data[i];
+            var titleStr = String(item && item.title ? item.title : 'Tanpa Judul');
+            var authorStr = String(item && item.author ? item.author : 'Unknown');
+            
+            var safeTitle = titleStr.replace(/"/g, '&quot;');
+            var safeAuthor = authorStr.replace(/"/g, '&quot;');
+            
+            resultArea.innerHTML += `
+              <div class="card yt-layout">
+                <img src="${item.thumbnail || ''}" class="card-thumb" alt="Thumb">
+                <div class="card-content">
+                  <div class="card-title">${safeTitle.toUpperCase()}</div>
+                  <div class="card-meta">${safeAuthor} • ${item.timestamp || '-'}</div>
+                  
+                  <audio controls preload="none" 
+                         data-title="${safeTitle}" 
+                         data-artist="${safeAuthor}" 
+                         data-cover="${item.thumbnail || ''}" 
+                         onplay="setMediaSession(this)">
+                    <source src="/api/stream?url=${encodeURIComponent(item.url)}" type="audio/mpeg">
+                  </audio>
+
+                  <div class="speed-control" style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 0.75rem; color: #94a3b8;">Kecepatan:</span>
+                    <input type="range" min="0.25" max="2.0" step="0.05" value="1.0" oninput="changePlaybackSpeed(this)" style="cursor: pointer; flex: 1;">
+                    <span class="speed-val" style="font-size: 0.75rem; color: #38bdf8; font-weight: bold; min-width: 42px;">1.00x</span>
+                  </div>
+                  
+                  <div class="action-buttons">
+                    <a href="/api/download?url=${encodeURIComponent(item.url)}&title=${encodeURIComponent(titleStr)}" class="btn-green" target="_blank">Unduh MP3</a>
+                    <a href="${item.url}" class="btn-dark" target="_blank">Buka YT &rarr;</a>
+                  </div>
+                </div>
+              </div>`;
+          }
+
+        } else if (platform === 'tiktok') {
+          var res = await fetch('/api/ttsearch?query=' + encodeURIComponent(query));
+          var data = await res.json();
+
+          if (!res.ok || !data || !Array.isArray(data.data) || data.data.length === 0) {
+            resultArea.innerHTML = '<div class="status-msg error-text">' + (data && data.error ? data.error : 'Tidak ada hasil TikTok ditemukan.') + '</div>';
+            return;
+          }
+
+          resultArea.innerHTML = '';
+          for (var j = 0; j < data.data.length; j++) {
+            var item = data.data[j];
+            var titleStr = String(item && item.title ? item.title : 'Video TikTok');
+            var authorStr = String(item && item.author ? item.author : 'Kreator');
+            var coverStr = String(item && item.cover ? item.cover : '');
+            var playStr = String(item && item.play ? item.play : '');
+            var musicStr = String(item && item.music ? item.music : '');
+
+            var safeTitle = titleStr.replace(/"/g, '&quot;');
+            var safeAuthor = authorStr.replace(/"/g, '&quot;');
+
+            resultArea.innerHTML += `
+              <div class="card tt-layout">
+                <div class="card-content">
+                  <div class="card-title">${safeTitle}</div>
+                  <div class="card-meta">Kreator: @${safeAuthor}</div>
+                  ${coverStr ? '<img src="' + coverStr + '" class="card-thumb" alt="Cover" style="margin: 10px 0;">' : ''}
+                  
+                  ${musicStr ? `
+                  <audio controls preload="none" 
+                         data-title="${safeTitle}" 
+                         data-artist="@${safeAuthor}" 
+                         data-cover="${coverStr}" 
+                         onplay="setMediaSession(this)">
+                    <source src="${musicStr}" type="audio/mpeg">
+                  </audio>
+                  <div class="speed-control" style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 0.75rem; color: #94a3b8;">Kecepatan:</span>
+                    <input type="range" min="0.25" max="2.0" step="0.05" value="1.0" oninput="changePlaybackSpeed(this)" style="cursor: pointer; flex: 1;">
+                    <span class="speed-val" style="font-size: 0.75rem; color: #38bdf8; font-weight: bold; min-width: 42px;">1.00x</span>
+                  </div>` : ''}
+
+                  <div class="action-buttons" style="margin-top: 10px;">
+                    ${playStr ? '<a href="' + playStr + '" class="btn-green" target="_blank">Lihat MP4</a>' : ''}
+                    ${musicStr ? '<a href="' + musicStr + '" class="btn-dark" target="_blank">Unduh MP3</a>' : ''}
+                  </div>
+                </div>
+              </div>`;
+          }
+        }
+      } catch (err) {
+        resultArea.innerHTML = '<div class="status-msg error-text">Terjadi Kesalahan: ' + err.message + '</div>';
+      }
+    }
+
+    window.toggleChips = toggleChips;
+    window.setKeyword = setKeyword;
+    window.toggleAgentChat = toggleAgentChat;
+    window.changePlaybackSpeed = changePlaybackSpeed;
+    window.setMediaSession = setMediaSession;
+    window.allowAndPlay = allowAndPlay;
+    window.sendAgentMessage = sendAgentMessage;
+    window.performSearch = performSearch;
+
+    toggleChips();
+  </script>
+</body>
+</html>

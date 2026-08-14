@@ -1,0 +1,27 @@
+{
+  "name": "web-tools-hub",
+  "version": "7.1.0",
+  "description": "Web Tools Hub Backend API Service",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "web-tools",
+    "api-service",
+    "express",
+    "media-downloader",
+    "yt-search"
+  ],
+  "author": "Manz Ganteng",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.7.9",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^5.0.1",
+    "yt-search": "^2.13.1"
+  }
+}
