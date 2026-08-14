@@ -15,7 +15,6 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const HOST = '127.0.0.1';
 
 // Pengambilan API Key secara aman dari environment variable
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
@@ -39,7 +38,7 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(publicDir, 'index.html'));
 });
 
-// ROUTE 1: AI Agent GPT-OSS
+// ROUTE 1: AI Agent (Groq)
 app.post('/api/agent', async (req, res) => {
   const { prompt } = req.body;
   if (!prompt) return res.status(400).json({ error: 'Prompt tidak boleh kosong.' });
@@ -61,11 +60,11 @@ app.post('/api/agent', async (req, res) => {
     const groqResponse = await apiClient.post(
       'https://api.groq.com/openai/v1/chat/completions',
       {
-        model: 'openai/gpt-oss-120b',
+        model: 'llama-3.3-70b-versatile',
         messages: [
           {
             role: 'system',
-            content: `Anda adalah AI Agent terintegrasi berbasis GPT-OSS.
+            content: `Anda adalah AI Agent terintegrasi.
 ${searchContext ? `Data Terkini dari Web:\n${searchContext}\n` : ''}
 Tugas Anda:
 1. Jawab pertanyaan pengguna secara akurat dan ringkas (maksimal 2 kalimat).
@@ -105,7 +104,7 @@ Tugas Anda:
     const cleanReply = aiReply.replace(/\[LAGU:.*?\]/gi, '').trim();
 
     res.json({
-      model: 'GPT-OSS-120B (Web Search Integrated)',
+      model: 'Llama-3.3-70b (Web Search Integrated)',
       reply: cleanReply,
       song: songData
     });
@@ -228,6 +227,6 @@ app.get('/api/download', async (req, res) => {
   }
 });
 
-app.listen(PORT, HOST, () => {
-  console.log(`Server aktif di http://${HOST}:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server aktif di port ${PORT}`);
 });
